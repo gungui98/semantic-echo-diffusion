@@ -3,7 +3,7 @@ import os
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "0,1,2"
 
-from video_diffusion_pytorch import Unet3DS, Trainer, KarrasDiffusion
+from video_diffusion_pytorch import Unet3DSPADE, Trainer, KarrasDiffusion
 
 def get_args():
     parser = argparse.ArgumentParser()
@@ -26,7 +26,7 @@ if __name__ == '__main__':
     args = get_args()
     results_folder = os.path.join(args.results_folder,f"{args.data_dir}_{args.num_frames}_{args.image_size}")
     
-    model = Unet3DMotionODE(
+    model = Unet3DSPADE(
         dim=32,
         dim_mults=(1, 2, 4),
     )

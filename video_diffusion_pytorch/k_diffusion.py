@@ -2,7 +2,7 @@ from math import sqrt
 
 import torch
 import torch.nn.functional as F
-from einops import rearrange
+from einops import rearrange, reduce
 from torch import nn
 from tqdm import tqdm
 
@@ -255,7 +255,7 @@ class KarrasDiffusion(nn.Module):
         if hasattr(self.denoise_fn, "reset_loss"):
             self.denoise_fn.reset_loss()
             
-        denoised_images, motion_field = self.preconditioned_network_forward(
+        denoised_images = self.preconditioned_network_forward(
             self.denoise_fn.forward,
             noised_images,
             sigmas,
@@ -266,27 +266,11 @@ class KarrasDiffusion(nn.Module):
 
         # losses
 
-        # losses = F.mse_loss(denoised_images, x, reduction='none')
-        # losses = reduce(losses, 'b ... -> b', 'mean')
+        losses = F.mse_loss(denoised_images, x, reduction='none')
+        losses = reduce(losses, 'b ... -> b', 'mean')
 
-        # # loss weighting
-        # loss_weight = self.loss_weight(self.sigma_data, sigmas).to(device)
-        # losses = losses * loss_weight
-        losses = self.denoise_fn.motion_ode.deform_loss
-        # if hasattr(self.denoise_fn, "get_loss"):
-        #     first_frame = repeat(self.denoise_fn.cache_tensor[:, :, 0], 'b c h w -> (b f) c h w', f=x.shape[2])
-        #     deform_feature = F.grid_sample(first_frame, motion_field, mode='bilinear', padding_mode='border')
-        #     deform_feature = rearrange(deform_feature, '(b f) c h w -> b c f h w', f=x.shape[2])
-        #     deform_loss = F.mse_loss(deform_feature, self.denoise_fn.cache_tensor, reduction='none')
-        #     deform_loss = reduce(deform_loss, 'b ... -> b', 'mean') 
-        #     deform_loss = deform_loss * (1 - (sigmas - self.sigma_min)/(self.sigma_max - self.sigma_min)).to(deform_loss.device)
-        #     # print(f"sigmas: {sigmas} deform_loss: {deform_loss}")
-        #     # losses = self.denoise_fn.get_loss() + deform_loss
-        #     losses = deform_loss
-
-        # return average loss
-
-        # torch.save(self.denoise_fn.cache_tensor, "cache_tensor.pt")
-        # torch.save(kwargs['cond'], "cond.pt")
+        # loss weighting
+        loss_weight = self.loss_weight(self.sigma_data, sigmas).to(device)
+        losses = losses * loss_weight
 
         return losses.mean()
