@@ -252,8 +252,6 @@ class KarrasDiffusion(nn.Module):
         # noise
         noise = torch.randn_like(x)
         noised_images = x + padded_sigmas * noise  # alphas are 1. in the paper
-        if hasattr(self.denoise_fn, "reset_loss"):
-            self.denoise_fn.reset_loss()
             
         denoised_images = self.preconditioned_network_forward(
             self.denoise_fn.forward,
